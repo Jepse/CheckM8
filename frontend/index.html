@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkmate</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-papmQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1Qw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="logo">
+        <!-- Use the downloaded SVG logo instead of the missing PNG -->
+        <img src="assets/logo_long.png" alt="Checkmate Logo" style="height: 2.2rem; width: auto; margin-right: 0.6rem; vertical-align: middle;" />
+      </div>
+      <button id="new-checklist-btn">
+        <span>+</span>
+        <span>New Checklist</span>
+      </button>
+    </div>
+    <div class="card-container" id="card-container"></div>
+  </div>
+
+  <script>
+    /**
+     * Checklist class to encapsulate a list of items. Each item has
+     * the shape { text: string, done: boolean, subListIndex?: number }.
+     */
+    class Checklist {
+      constructor(title, items = []) {
+        this.title = title;
+        this.items = items;
+      }
+    }
+
+    /**
+     * Load checklists from localStorage if present. If no data exists
+     * this function falls back to a default set of lists so that first
+     * time users get an idea of how the app works. LocalStorage is
+     * intentionally used instead of a more complex persistence layer
+     * because it works out of the box in both the browser and Electron.
+     */
+    function loadData() {
+      let stored = null;
+      try {
+        stored = localStorage.getItem('checklists');
+      } catch (err) {
+        console.error('Failed to read from localStorage:', err);
+      }
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (err) {
+          console.error('Failed to parse stored checklists:', err);
+        }
+      }
+      // Fall back to a couple of example lists when nothing is stored
+      return [
+        new Checklist('Daily Checks', [
+          { text: 'Morning meditation for 10 minutes', done: true },
+          { text: '30-minute workout session', done: true },
+          { text: 'Read 10 pages of a book', done: true }
+        ]),
+        new Checklist('Long-Term Goals', [
+          { text: 'Run a half-marathon by the end of the year', done: false }
+        ])
+      ];
+    }
+
+    /**
+     * Persist the current list of checklists to localStorage. Errors
+     * are caught and logged to avoid interrupting the user flow.
+     */
+    function saveData() {
+      try {
+        localStorage.setItem('checklists', JSON.stringify(checklists));
+      } catch (err) {
+        console.error('Failed to write to localStorage:', err);
+      }
+    }
+
+    // Initialize global checklists array
+    let checklists = loadData();
+
+    /**
+     * When sublists reach 100% completion, mark their parent checklist
+     * items as done. Returns true if any parent completion changed.
+     */
+    function updateParentCompletion() {
+      let changed = false;
+      checklists.forEach((list) => {
+        if (list.parent) {
+          const total = list.items.length;
+          const completedCount = list.items.filter(i => i.done).length;
+          if (total > 0 && completedCount === total) {
+            const parentList = checklists[list.parent.listIndex];
+            if (parentList) {
+              const parentItem = parentList.items[list.parent.itemIndex];
+              if (parentItem && !parentItem.done) {
+                parentItem.done = true;
+                changed = true;
+              }
+            }
+          }
+        }
+      });
+      return changed;
+    }
+
+    /**
+     * Render all checklists into the card container. For the small
+     * datasets typical of personal checklists, clearing and re-rendering
+     * the entire DOM is sufficiently fast and simplifies the logic.
+     */
+    function render() {
+      const container = document.getElementById('card-container');
+      container.innerHTML = '';
+      checklists.forEach((list, listIndex) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        // Header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'card-header';
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = list.title;
+        headerDiv.appendChild(titleSpan);
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'actions';
+
+  // Edit checklist name button
+  const editChecklistBtn = document.createElement('button');
+  editChecklistBtn.title = 'Edit checklist name';
+  editChecklistBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:middle;"><path fill="currentColor" d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1 377.9 88 407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9 390.1 168 255.8 302.2c-2.9 2.9-6.5 5-10.4 6.1l-58.5 16.7 16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25C446.8-3.1 401.2-3.1 373.1 25zM88 64C39.4 64 0 103.4 0 152L0 424c0 48.6 39.4 88 88 88l272 0c48.6 0 88-39.4 88-88l0-112c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 112c0 22.1-17.9 40-40 40L88 464c-22.1 0-40-17.9-40-40l0-272c0-22.1 17.9-40 40-40l112 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L88 64z"/></svg>`;
+  editChecklistBtn.onclick = () => {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = list.title;
+          input.style.fontSize = '1.1rem';
+          input.style.fontWeight = 'bold';
+          input.style.width = '70%';
+          input.style.marginRight = '0.5rem';
+          headerDiv.replaceChild(input, titleSpan);
+          input.focus();
+          input.onblur = () => {
+            const newName = input.value.trim();
+            if (newName) {
+              list.title = newName;
+            }
+            headerDiv.replaceChild(titleSpan, input);
+            titleSpan.textContent = list.title;
+            render();
+          };
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              input.blur();
+            } else if (e.key === 'Escape') {
+              headerDiv.replaceChild(titleSpan, input);
+            }
+          };
+        };
+        actionsDiv.appendChild(editChecklistBtn);
+
+  // Delete checklist button
+  const deleteBtn = document.createElement('button');
+  deleteBtn.title = 'Delete checklist';
+  deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:1em;height:1em;vertical-align:middle;"><path fill="currentColor" d="M166.2-16c-13.3 0-25.3 8.3-30 20.8L120 48 24 48C10.7 48 0 58.7 0 72S10.7 96 24 96l400 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-96 0-16.2-43.2C307.1-7.7 295.2-16 281.8-16L166.2-16zM32 144l0 304c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-304-48 0 0 304c0 8.8-7.2 16-16 16L96 464c-8.8 0-16-7.2-16-16l0-304-48 0zm160 72c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 176c0 13.3 10.7 24 24 24s24-10.7 24-24l0-176zm112 0c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 176c0 13.3 10.7 24 24 24s24-10.7 24-24l0-176z"/></svg>`;
+  deleteBtn.onclick = () => {
+          // Remove sublists that reference this checklist as a parent
+          for (let i = checklists.length - 1; i >= 0; i--) {
+            const l = checklists[i];
+            if (l.parent && l.parent.listIndex === listIndex) {
+              checklists.splice(i, 1);
+            }
+          }
+          checklists.splice(listIndex, 1);
+          render();
+        };
+        actionsDiv.appendChild(deleteBtn);
+        headerDiv.appendChild(actionsDiv);
+        card.appendChild(headerDiv);
+
+        // Info row
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'info';
+        const countSpan = document.createElement('span');
+        countSpan.textContent = `${list.items.length} items`;
+        const percentSpan = document.createElement('span');
+        const completed = list.items.filter(i => i.done).length;
+        const percent = list.items.length ? Math.round((completed / list.items.length) * 100) : 0;
+        percentSpan.textContent = `${percent}% complete`;
+        infoDiv.appendChild(countSpan);
+        infoDiv.appendChild(percentSpan);
+        card.appendChild(infoDiv);
+
+        // Progress bar
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        const progressInner = document.createElement('div');
+        progressInner.className = 'progress-bar-inner';
+        progressInner.style.width = `${percent}%`;
+        progressBar.appendChild(progressInner);
+        card.appendChild(progressBar);
+
+        // Items list
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'items';
+        list.items.forEach((item, itemIndex) => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'item';
+          if (item.done) itemDiv.classList.add('completed');
+          // Drag and drop attributes
+          itemDiv.setAttribute('draggable', 'true');
+          itemDiv.dataset.index = itemIndex;
+          itemDiv.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', itemIndex);
+            itemDiv.classList.add('dragging');
+          });
+          itemDiv.addEventListener('dragend', () => {
+            itemDiv.classList.remove('dragging');
+          });
+          itemDiv.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            itemDiv.classList.add('drag-over');
+          });
+          itemDiv.addEventListener('dragleave', () => {
+            itemDiv.classList.remove('drag-over');
+          });
+          itemDiv.addEventListener('drop', (e) => {
+            e.preventDefault();
+            itemDiv.classList.remove('drag-over');
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const toIndex = itemIndex;
+            if (fromIndex !== toIndex) {
+              const moved = list.items.splice(fromIndex, 1)[0];
+              list.items.splice(toIndex, 0, moved);
+              render();
+            }
+          });
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = item.done;
+          checkbox.onchange = () => {
+            list.items[itemIndex].done = checkbox.checked;
+            if (updateParentCompletion()) {
+              render();
+              return;
+            }
+            render();
+          };
+          const label = document.createElement('label');
+          label.textContent = item.text;
+          itemDiv.appendChild(checkbox);
+          itemDiv.appendChild(label);
+          // Controls
+          const controls = document.createElement('div');
+          controls.className = 'controls';
+          // ...existing code...
+          const editBtn = document.createElement('button');
+          editBtn.className = 'edit-btn';
+          editBtn.title = 'Edit';
+          editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:middle;"><path fill="currentColor" d="M441 58.9L453.1 71c9.4 9.4 9.4 24.6 0 33.9L424 134.1 377.9 88 407 58.9c9.4-9.4 24.6-9.4 33.9 0zM209.8 256.2L344 121.9 390.1 168 255.8 302.2c-2.9 2.9-6.5 5-10.4 6.1l-58.5 16.7 16.7-58.5c1.1-3.9 3.2-7.5 6.1-10.4zM373.1 25L175.8 222.2c-8.7 8.7-15 19.4-18.3 31.1l-28.6 100c-2.4 8.4-.1 17.4 6.1 23.6s15.2 8.5 23.6 6.1l100-28.6c11.8-3.4 22.5-9.7 31.1-18.3L487 138.9c28.1-28.1 28.1-73.7 0-101.8L474.9 25C446.8-3.1 401.2-3.1 373.1 25zM88 64C39.4 64 0 103.4 0 152L0 424c0 48.6 39.4 88 88 88l272 0c48.6 0 88-39.4 88-88l0-112c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 112c0 22.1-17.9 40-40 40L88 464c-22.1 0-40-17.9-40-40l0-272c0-22.1 17.9-40 40-40l112 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L88 64z"/></svg>`;
+          editBtn.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = item.text;
+            input.style.fontSize = '1rem';
+            input.style.width = '70%';
+            input.style.marginRight = '0.5rem';
+            itemDiv.replaceChild(input, label);
+            input.focus();
+            input.onblur = () => {
+              const newText = input.value.trim();
+              if (newText) {
+                list.items[itemIndex].text = newText;
+              }
+              itemDiv.replaceChild(label, input);
+              label.textContent = list.items[itemIndex].text;
+              render();
+            };
+            input.onkeydown = (e) => {
+              if (e.key === 'Enter') {
+                input.blur();
+              } else if (e.key === 'Escape') {
+                itemDiv.replaceChild(label, input);
+              }
+            };
+          };
+          controls.appendChild(editBtn);
+          // Delete button
+          const delBtn = document.createElement('button');
+          delBtn.className = 'delete-btn';
+          delBtn.title = 'Delete';
+          delBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:1em;height:1em;vertical-align:middle;"><path fill="currentColor" d="M166.2-16c-13.3 0-25.3 8.3-30 20.8L120 48 24 48C10.7 48 0 58.7 0 72S10.7 96 24 96l400 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-96 0-16.2-43.2C307.1-7.7 295.2-16 281.8-16L166.2-16zM32 144l0 304c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-304-48 0 0 304c0 8.8-7.2 16-16 16L96 464c-8.8 0-16-7.2-16-16l0-304-48 0zm160 72c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 176c0 13.3 10.7 24 24 24s24-10.7 24-24l0-176zm112 0c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 176c0 13.3 10.7 24 24 24s24-10.7 24-24l0-176z"/></svg>`;
+          delBtn.onclick = () => {
+            if (typeof item.subListIndex === 'number') {
+              const subIdx = item.subListIndex;
+              // Remove the sublist
+              checklists.splice(subIdx, 1);
+              // Update parent references and subListIndex references
+              checklists.forEach((l) => {
+                if (l.parent && l.parent.listIndex > subIdx) {
+                  l.parent.listIndex -= 1;
+                }
+                l.items.forEach((it) => {
+                  if (typeof it.subListIndex === 'number' && it.subListIndex > subIdx) {
+                    it.subListIndex -= 1;
+                  }
+                });
+              });
+            }
+            list.items.splice(itemIndex, 1);
+            render();
+          };
+          controls.appendChild(delBtn);
+          itemDiv.appendChild(controls);
+          itemsContainer.appendChild(itemDiv);
+        });
+        card.appendChild(itemsContainer);
+
+        // Add item row
+        const addDiv = document.createElement('div');
+        addDiv.className = 'add-item';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Add a new item…';
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '+';
+        addBtn.title = 'Add item';
+        addBtn.onclick = () => {
+          const value = input.value.trim();
+          if (value) {
+            list.items.push({ text: value, done: false });
+            input.value = '';
+            render();
+          }
+        };
+        // Allow Enter key to add item
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            addBtn.click();
+          }
+        });
+        addDiv.appendChild(input);
+        addDiv.appendChild(addBtn);
+        card.appendChild(addDiv);
+
+        container.appendChild(card);
+      });
+      // After rendering all cards, update parent completion if needed
+      if (updateParentCompletion()) {
+        // If any parent changed, re-render to update progress bars and then return early
+        render();
+        return;
+      }
+      // Persist changes whenever the UI is re-rendered
+      saveData();
+    }
+
+    // New checklist button handler
+    document.getElementById('new-checklist-btn').addEventListener('click', () => {
+      checklists.push(new Checklist('New Checklist', []));
+      render();
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
