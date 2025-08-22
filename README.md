@@ -1,16 +1,16 @@
-# Checkmate
+<img width="5085" height="1022" alt="logo_long" src="https://github.com/user-attachments/assets/4e49646b-74fa-49e5-b8ad-03344c37e967" />
 
-A simple checklist application built with Electron.
+
+
 
 ## Getting Started
 
-To get a local copy up and running, follow these simple steps.
+To get a local copy up and running for now, follow these steps.
 
 ### Prerequisites
 
-* npm
   ```sh
-  npm install npm@latest -g
+  NodeJs/npm
   ```
 
 ### Installation
@@ -24,10 +24,7 @@ To get a local copy up and running, follow these simple steps.
    cd frontend
    npm install
    ```
-
-### Usage
-
-To run the application, run the following command in the `frontend` directory:
+To run the application:
 
 ```sh
 npm start
