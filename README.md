@@ -3,7 +3,7 @@
 
 
 
-## Getting Started
+## A simple checklist app
 
 To get a local copy up and running for now, follow these steps.
 
