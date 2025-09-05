@@ -23,6 +23,7 @@
     <div class="card-container" id="card-container"></div>
   </div>
 
+  <script src="./node_modules/sortablejs/Sortable.min.js"></script>
   <script>
     /**
      * Checklist class to encapsulate a list of items. Each item has
@@ -123,10 +124,16 @@
       checklists.forEach((list, listIndex) => {
         const card = document.createElement('div');
         card.className = 'card';
+        card.dataset.id = listIndex;
 
         // Header
         const headerDiv = document.createElement('div');
         headerDiv.className = 'card-header';
+        
+        const handle = document.createElement('i');
+        handle.className = 'fas fa-grip-vertical handle';
+        headerDiv.appendChild(handle);
+
         const titleSpan = document.createElement('span');
         titleSpan.textContent = list.title;
         headerDiv.appendChild(titleSpan);
@@ -371,6 +378,19 @@
 
     // Initial render
     render();
+
+    const container = document.getElementById('card-container');
+    new Sortable(container, {
+      animation: 150,
+      handle: '.handle',
+      ghostClass: 'sortable-ghost',
+      onEnd: function (evt) {
+        const item = checklists.splice(evt.oldIndex, 1)[0];
+        checklists.splice(evt.newIndex, 0, item);
+        saveData();
+        render();
+      }
+    });
   </script>
 </body>
 </html>

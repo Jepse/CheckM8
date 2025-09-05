@@ -1,4 +1,4 @@
-/* Extracted from index.html */
+
 :root {
   --primary-color: #03d826;
   --background-color: #919191;
@@ -20,7 +20,6 @@ body {
   color: var(--text-color);
 }
 
-/* Top navigation bar */
 .header {
   display: flex;
   align-items: center;
@@ -52,7 +51,6 @@ body {
   font-size: 1.2rem;
 }
 
-/* Card layout */
 .card-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -137,7 +135,6 @@ body {
   color: var(--muted-text-color);
 }
 
-/* Controls container is hidden by default and appears on hover */
 .controls {
   display: flex;
   gap: 0.25rem;
@@ -162,19 +159,16 @@ body {
   line-height: 1;
 }
 
-/* AI button: teal background with white icon */
 .controls .ai-btn {
-  display: none; /* Placeholder to indicate removal */
+  display: none; 
 }
 
-/* Edit button: white background with teal border and icon */
 .controls .edit-btn {
   background-color: #ffffff;
   color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
-/* Delete button: white background with red border and icon */
 .controls .delete-btn {
   background-color: #ffffff;
   color: #e74c3c;
@@ -206,9 +200,19 @@ body {
   font-size: 1rem;
 }
 
-/* Responsiveness */
 @media (max-width: 768px) {
   .card-container {
     grid-template-columns: 1fr;
   }
+}
+
+.handle {
+  cursor: grab;
+  margin-right: 0.5rem;
+  color: var(--muted-text-color);
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+  background-color: #c8ebfb;
 }
