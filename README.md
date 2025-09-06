@@ -1,3 +1,4 @@
+<img width="5085" height="1022" alt="logo_long" src="https://github.com/user-attachments/assets/ba78ad22-bc7e-40e6-a14c-c54a0f4ce383" />
 
 ## A minimalist's checklist app
 
