@@ -79,6 +79,13 @@ body {
   margin-bottom: 0.3rem;
 }
 
+.card-header .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
 .card-header .actions button {
   background: none;
   border: none;
@@ -208,8 +215,9 @@ body {
 
 .handle {
   cursor: grab;
-  margin-right: 0.5rem;
   color: var(--muted-text-color);
+  font-size: 1.2rem;
+  margin: 0 auto;
 }
 
 .sortable-ghost {

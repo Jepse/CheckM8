@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Checkmate</title>
+  <title>CheckM8</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Font Awesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-papmQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1QwQ1Qw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
 </head>
 <body>
   <div class="wrapper">
@@ -87,6 +86,7 @@
 
     // Initialize global checklists array
     let checklists = loadData();
+    let sortable = null;
 
     /**
      * When sublists reach 100% completion, mark their parent checklist
@@ -119,6 +119,9 @@
      * the entire DOM is sufficiently fast and simplifies the logic.
      */
     function render() {
+      if (sortable) {
+        sortable.destroy();
+      }
       const container = document.getElementById('card-container');
       container.innerHTML = '';
       checklists.forEach((list, listIndex) => {
@@ -129,16 +132,20 @@
         // Header
         const headerDiv = document.createElement('div');
         headerDiv.className = 'card-header';
-        
-        const handle = document.createElement('i');
-        handle.className = 'fas fa-grip-vertical handle';
-        headerDiv.appendChild(handle);
 
         const titleSpan = document.createElement('span');
         titleSpan.textContent = list.title;
         headerDiv.appendChild(titleSpan);
+
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'actions';
+
+  // Edit checklist name button
+  const handle = document.createElement('button');
+        handle.title = 'Drag to reorder';
+        handle.className = 'handle';
+        handle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" style="width:1em;height:1em;vertical-align:middle;transform:rotate(90deg);"><path fill="currentColor" d="M128 40c0-22.1-17.9-40-40-40L40 0C17.9 0 0 17.9 0 40L0 88c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48zm0 192c0-22.1-17.9-40-40-40l-48 0c-22.1 0-40 17.9-40 40l0 48c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48zM0 424l0 48c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48c0-22.1-17.9-40-40-40l-48 0c-22.1 0-40 17.9-40 40zM320 40c0-22.1-17.9-40-40-40L232 0c-22.1 0-40 17.9-40 40l0 48c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48zM192 232l0 48c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48c0-22.1-17.9-40-40-40l-48 0c-22.1 0-40 17.9-40 40zM320 424c0-22.1-17.9-40-40-40l-48 0c-22.1 0-40 17.9-40 40l0 48c0 22.1 17.9 40 40 40l48 0c22.1 0 40-17.9 40-40l0-48z"/></svg>`;
+        actionsDiv.appendChild(handle);
 
   // Edit checklist name button
   const editChecklistBtn = document.createElement('button');
@@ -225,6 +232,7 @@
           itemDiv.setAttribute('draggable', 'true');
           itemDiv.dataset.index = itemIndex;
           itemDiv.addEventListener('dragstart', (e) => {
+            e.stopPropagation();
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', itemIndex);
             itemDiv.classList.add('dragging');
@@ -368,6 +376,18 @@
       }
       // Persist changes whenever the UI is re-rendered
       saveData();
+
+      sortable = new Sortable(container, {
+        animation: 150,
+        handle: '.handle',
+        ghostClass: 'sortable-ghost',
+        onEnd: function (evt) {
+          const item = checklists.splice(evt.oldIndex, 1)[0];
+          checklists.splice(evt.newIndex, 0, item);
+          saveData();
+          render();
+        }
+      });
     }
 
     // New checklist button handler
@@ -378,19 +398,6 @@
 
     // Initial render
     render();
-
-    const container = document.getElementById('card-container');
-    new Sortable(container, {
-      animation: 150,
-      handle: '.handle',
-      ghostClass: 'sortable-ghost',
-      onEnd: function (evt) {
-        const item = checklists.splice(evt.oldIndex, 1)[0];
-        checklists.splice(evt.newIndex, 0, item);
-        saveData();
-        render();
-      }
-    });
   </script>
 </body>
 </html>
