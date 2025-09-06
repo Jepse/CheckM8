@@ -2,11 +2,11 @@
 
 ## A minimalist's checklist app
 
-<img width="1234" height="841" alt="Screenshot 2025-08-21 183933" src="https://github.com/user-attachments/assets/00eead4b-fa87-49af-a05d-f66ae030ecc8" />
+<img width="1236" height="843" alt="gui" src="https://github.com/user-attachments/assets/19536c0d-9a6d-4686-9535-ff9e2e35fd2c" />
 
 ### Download
 
-https://github.com/Jepse/Checkmate/releases/tag/v0.1.0
+https://github.com/Jepse/CheckM8/releases/tag/v0.1.0
 
 To edit source code:
 
@@ -20,7 +20,7 @@ To edit source code:
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/Jepse/Checkmate.git
+   git clone https://github.com/Jepse/CheckM8.git
    ```
 2. Install NPM packages in the `frontend` directory
    ```sh
